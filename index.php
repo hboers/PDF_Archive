@@ -1,4 +1,5 @@
 <?php
+
 $db = new PDO('sqlite:meta.db');
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
@@ -39,6 +40,17 @@ function relpath($full, $base)
             overflow-y: auto;
         }
 
+        a {
+            color: #007bff;
+            text-decoration: none;
+            background-color: transparent;
+        }
+
+        a:hover {
+            color: #0056b3;
+            text-decoration: underline;
+        }
+
         pre.output {
             background-color: #f8f9fa;
             border: 1px solid #dee2e6;
@@ -66,9 +78,12 @@ function relpath($full, $base)
                                 $stmt = $db->prepare("SELECT * FROM file_meta WHERE path = ?");
                                 $stmt->execute([$rel]);
                                 ?>
-                                <a href="?edit=<?= urlencode($rel) ?>" class="list-group-item list-group-item-action">
-                                    <?= htmlspecialchars($rel) ?>
-                                </a>
+                                <div class="list-group-item ">
+                                    <a href="?edit=<?= urlencode($rel) ?>" class="list-group-item-action">
+                                        <?= htmlspecialchars($rel) ?>
+                                    </a>
+                                    <a class="float-end" target="_blank" href="<?= $rel ?>">📄</a>
+                                </div>
                             <?php endforeach; ?>
                         </div>
                     </div>
@@ -78,7 +93,7 @@ function relpath($full, $base)
         <div class="col-sm-12 col-lg-4">
             <div class="card mb-4">
                 <div class="card-header">
-                   Suche
+                    Suche
                 </div>
                 <div class="card-body">
                     <form method="get">
@@ -116,38 +131,42 @@ function relpath($full, $base)
             </div>
             <div class="card-body">
                 <form method="post">
-                <div class="row">
-                    <div class="col-sm-12 col-lg-6"> <div class="mb-3">
-                            <div class="form-group ">
-                                <label class="form-label">Dateiname</label>
-                                <input class="form-control" readonly type="text" name="path"
-                                       value="<?= htmlspecialchars($meta['path']) ?>">
+                    <div class="row">
+                        <div class="col-sm-12 col-lg-6">
+                            <div class="mb-3">
+                                <div class="form-group ">
+                                    <label class="form-label">Dateiname</label>
+                                    <input class="form-control" readonly type="text" name="path"
+                                           value="<?= htmlspecialchars($meta['path']) ?>">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-group">
+                                    <label class="form-label">Tags</label>
+                                    <input class="form-control" name="tags"
+                                           value="<?= htmlspecialchars($meta['tags']) ?>">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-group">
+                                    <label class="form-label">Notiz</label>
+                                    <textarea class="form-control" name="notes"
+                                              rows="5"><?= htmlspecialchars($meta['notes']) ?></textarea>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="mb-3">
-                            <div class="form-group">
-                                <label class="form-label">Tags</label>
-                                <input class="form-control" name="tags" value="<?= htmlspecialchars($meta['tags']) ?>">
+                        <div class="col-sm-12 col-lg-6">
+                            <div class="mb-3">
+                                <div class="form-group">
+                                    <label class="form-label">Inhalt</label>
+                                    <textarea readonly rows="12"
+                                              class="form-control"><?= htmlspecialchars($output) ?></textarea>
+                                </div>
                             </div>
                         </div>
-
-                        <div class="mb-3">
-                            <div class="form-group">
-                                <label class="form-label">Notiz</label>
-                                <textarea class="form-control" name="notes"
-                                          rows="5"><?= htmlspecialchars($meta['notes']) ?></textarea>
-                            </div>
-                        </div></div>
-                    <div class="col-sm-12 col-lg-6"><div class="mb-3">
-                            <div class="form-group">
-                                <label class="form-label">Inhalt</label>
-                                <textarea readonly rows="12" class="form-control"><?= htmlspecialchars($output) ?></textarea>
-                            </div>
-                        </div></div>
-                </div>
-
-
+                    </div>
 
 
                     <button type="submit" class="btn btn-primary">Speichern</button>
@@ -159,14 +178,30 @@ function relpath($full, $base)
 </div>
 
 <script>
-    document.getElementById('searchInput').addEventListener('input', function () {
-        const search = this.value.toLowerCase();
-        const items = document.querySelectorAll('#fileList a');
+    function filterItems(searchInput)
+    {
+        const searchLower = searchInput.toLowerCase();
+        const items = document.querySelectorAll('#fileList div.list-group-item');
         items.forEach(item => {
             const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(search) ? '' : 'none';
+            item.style.display = text.includes(searchLower) ? '' : 'none';
         });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const searchInput = sessionStorage.getItem('searchInput');
+        if (searchInput !== null) {
+            document.getElementById('searchInput').value = searchInput;
+            filterItems(searchInput);
+        }
     });
+
+    document.getElementById('searchInput').addEventListener('input', function () {
+        const searchInput = this.value;
+        sessionStorage.setItem('searchInput', searchInput);
+        filterItems(searchInput)
+    });
+
 </script>
 
 </body>
