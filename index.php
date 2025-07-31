@@ -50,28 +50,49 @@ function relpath($full, $base)
 </head>
 <body class="bg-light">
 <div class="container py-2">
-    <div class="card mb-4">
-        <div class="card-header">
-            Dateiliste
+    <div class="row">
+        <div class="col-sm-12 col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    Dateiliste
+                </div>
+                <div class="card-body">
+                    <input type="text" id="searchInput" class="form-control mb-3" placeholder="Dateien durchsuchen...">
+                    <div class="scrollable-list p-0">
+                        <div class="list-group list-group-flush" id="fileList">
+                            <?php foreach ($files as $file):
+                                if ($file->isDir()) continue;
+                                $rel = relpath($file->getPathname(), $baseDir);
+                                $stmt = $db->prepare("SELECT * FROM file_meta WHERE path = ?");
+                                $stmt->execute([$rel]);
+                                ?>
+                                <a href="?edit=<?= urlencode($rel) ?>" class="list-group-item list-group-item-action">
+                                    <?= htmlspecialchars($rel) ?>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body">
-            <input type="text" id="searchInput" class="form-control mb-3" placeholder="Dateien durchsuchen...">
-            <div class="scrollable-list p-0">
-                <div class="list-group list-group-flush" id="fileList">
-                    <?php foreach ($files as $file):
-                        if ($file->isDir()) continue;
-                        $rel = relpath($file->getPathname(), $baseDir);
-                        $stmt = $db->prepare("SELECT * FROM file_meta WHERE path = ?");
-                        $stmt->execute([$rel]);
-                        ?>
-                        <a href="?edit=<?= urlencode($rel) ?>" class="list-group-item list-group-item-action">
-                            <?= htmlspecialchars($rel) ?>
-                        </a>
-                    <?php endforeach; ?>
+        <div class="col-sm-12 col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                   Suche
+                </div>
+                <div class="card-body">
+                    <form method="get">
+                        <div class="mb-3">
+                            <input class="form-control" type="text" name="search" placeholder="Suchbegriff">
+                        </div>
+                    </form>
+                    <div class="scrollable-list p-0">
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
 
     <?php
     if (isset($_GET['edit'])):
