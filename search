@@ -1,0 +1,41 @@
+#!/bin/bash
+
+# Check if search term is provided
+if [ -z "$1" ]; then
+    echo "❌ Usage: $0 <search-term> [start-folder]"
+    exit 1
+fi
+
+SEARCH_TERM="$1"
+START_DIR="${2:-.}"
+
+# Check if directory exists
+if [ ! -d "$START_DIR" ]; then
+    echo "❌ Error: Folder '$START_DIR' not found"
+    exit 1
+fi
+
+# Clear previous error log
+ERROR_LOG="pdf_errors.log"
+> "$ERROR_LOG"
+
+# Search all PDFs
+find "$START_DIR" -type f -name "*.pdf" | while read -r file; do
+    # Try to extract text, capture error output
+    TEXT=$(pdftotext "$file" - 2>tmp_err.log)
+
+    if [ $? -ne 0 ]; then
+        # Log filename and error message
+        echo "❌ Failed: $file" >> "$ERROR_LOG"
+        cat tmp_err.log >> "$ERROR_LOG"
+        echo "---------------------------------" >> "$ERROR_LOG"
+        continue
+    fi
+
+    # Search text for term
+    if echo "$TEXT" | grep -iq "$SEARCH_TERM"; then
+        echo "✅ Match: $file"
+    fi
+done
+
+rm -f tmp_err.log

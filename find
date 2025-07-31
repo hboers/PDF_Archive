@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# --- Eingabe prüfen ---
+if [ -z "$1" ]; then
+    echo "❌ Verwendung: $0 <Belegnummer>"
+    exit 1
+fi
+
+BELEGNUMMER="$1"
+SUCHORDNER="."  # durchsucht aktuelles Verzeichnis und alle Unterverzeichnisse
+
+# --- PDF-Datei suchen (rekursiv) ---
+PDF_DATEI=$(find "$SUCHORDNER" -type f -name "${BELEGNUMMER}*.pdf" | head -n 1)
+
+if [ -z "$PDF_DATEI" ]; then
+    echo "❌ Keine PDF-Datei gefunden mit Belegnummer: $BELEGNUMMER"
+    exit 1
+fi
+
+# --- PDF-Inhalt anzeigen ---
+echo "📄 Zeige Inhalt von: $PDF_DATEI"
+pdftotext "$PDF_DATEI" - | less
