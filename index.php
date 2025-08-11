@@ -66,14 +66,15 @@ function relpath($full, $base)
         <div class="col-sm-12 col-lg-8">
             <div class="card mb-4">
                 <div class="card-header">
-                    Dateiliste
+                    PDF Dateien
                 </div>
                 <div class="card-body">
-                    <input type="text" id="searchInput" class="form-control mb-3" placeholder="Dateien durchsuchen...">
+                    <input type="text" id="searchFiles" class="form-control mb-3" placeholder="Suchen ...">
                     <div class="scrollable-list p-0">
                         <div class="list-group list-group-flush" id="fileList">
                             <?php foreach ($files as $file):
                                 if ($file->isDir()) continue;
+                                if ($file->getExtension() !== 'pdf') continue;
                                 $rel = relpath($file->getPathname(), $baseDir);
                                 $stmt = $db->prepare("SELECT * FROM file_meta WHERE path = ?");
                                 $stmt->execute([$rel]);
@@ -86,22 +87,6 @@ function relpath($full, $base)
                                 </div>
                             <?php endforeach; ?>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-12 col-lg-4">
-            <div class="card mb-4">
-                <div class="card-header">
-                    Suche
-                </div>
-                <div class="card-body">
-                    <form method="get">
-                        <div class="mb-3">
-                            <input class="form-control" type="text" name="search" placeholder="Suchbegriff">
-                        </div>
-                    </form>
-                    <div class="scrollable-list p-0">
                     </div>
                 </div>
             </div>
@@ -168,7 +153,6 @@ function relpath($full, $base)
                         </div>
                     </div>
 
-
                     <button type="submit" class="btn btn-primary">Speichern</button>
                     <a href="?dir=<?= urlencode(dirname($rel)) ?>" class="btn btn-secondary">Zurück</a>
                 </form>
@@ -178,28 +162,34 @@ function relpath($full, $base)
 </div>
 
 <script>
-    function filterItems(searchInput)
-    {
-        const searchLower = searchInput.toLowerCase();
+    function filterItems(searchFiles) {
+        const searchLower = searchFiles.toLowerCase();
         const items = document.querySelectorAll('#fileList div.list-group-item');
         items.forEach(item => {
+            item.style.display = 'none';
+        })
+        items.forEach(item => {
             const text = item.textContent.toLowerCase();
-            item.style.display = text.includes(searchLower) ? '' : 'none';
+            if (text.includes(searchLower))
+                item.style.display = '';
+            else
+                item.style.display = 'none';
         });
     }
 
+
     window.addEventListener('DOMContentLoaded', () => {
-        const searchInput = sessionStorage.getItem('searchInput');
-        if (searchInput !== null) {
-            document.getElementById('searchInput').value = searchInput;
-            filterItems(searchInput);
+        const searchFiles = sessionStorage.getItem('searchFiles');
+        if (searchFiles !== null) {
+            document.getElementById('searchFiles').value = searchFiles;
+            filterItems(searchFiles);
         }
     });
 
-    document.getElementById('searchInput').addEventListener('input', function () {
-        const searchInput = this.value;
-        sessionStorage.setItem('searchInput', searchInput);
-        filterItems(searchInput)
+    document.getElementById('searchFiles').addEventListener('input', function () {
+        const searchFiles = this.value;
+        sessionStorage.setItem('searchFiles', searchFiles);
+        filterItems(searchFiles)
     });
 
 </script>
