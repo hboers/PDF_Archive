@@ -2,39 +2,33 @@
 
 set -e
 
-# Überprüfung auf Eingabeparameter
-if [ -z "$1" ]; then
-    echo "Fehler: Kein Dateipfad angegeben."
+# Das Verzeichnis des aktuellen Skripts ermitteln
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+SHOW_SCRIPT="$SCRIPT_DIR/show" # Pfad zum `show`-Skript
+
+# Überprüfen, ob das `show`-Skript ausführbar ist
+if [ ! -x "$SHOW_SCRIPT" ]; then
+    echo "❌ Fehler: Das 'show'-Skript ist nicht ausführbar oder nicht vorhanden."
     exit 1
 fi
 
-FILE="$1"
-OUTFILE="${FILE%.pdf}.txt" # Zieltextdatei basierend auf PDF-Name
+# Rekursive Suche nach PDF-Dateien im Skriptverzeichnis
+echo "🔍 Suche nach PDF-Dateien im Verzeichnis '$SCRIPT_DIR'..."
+find "$SCRIPT_DIR" -type f -name "*.pdf" | while read -r PDF_FILE; do
+    # Generierung eines unsichtbaren Dateinamens für die Ausgabe
+    INVISIBLE_TXT_FILE="$(dirname "$PDF_FILE")/.${PDF_FILE##*/}"
+    INVISIBLE_TXT_FILE="${INVISIBLE_TXT_FILE%.pdf}.txt" # Ändert die Endung `.pdf` zu `.txt`
 
-# Überprüfen, ob die Eingabedatei existiert
-if [ ! -f "$FILE" ]; then
-    echo "Fehler: Datei existiert nicht."
-    exit 1
-fi
-
-# Überprüfen, ob pdftotext verfügbar ist
-if ! command -v /usr/bin/pdftotext >/dev/null 2>&1; then
-    echo "Fehler: pdftotext ist nicht installiert. Bitte installiere poppler-utils."
-    exit 1
-fi
-
-# Prüfung auf das PDF-Dateiformat und Ausgabe
-if [[ "${FILE,,}" == *.pdf ]]; then
-    if [ -f "$OUTFILE" ]; then
-        # Wenn die Zieltextdatei existiert, Inhalt mit `cat` ausgeben
-        cat "$OUTFILE"
+    # Wenn die versteckte TXT-Datei existiert, überspringen
+    if [ -f "$INVISIBLE_TXT_FILE" ]; then
+        echo "✅ Überspringe: $INVISIBLE_TXT_FILE existiert bereits."
     else
-        # Wenn die Zieltextdatei nicht existiert, PDF verarbeiten und Datei erstellen
-        /usr/bin/pdftotext "$FILE" "$OUTFILE"
-        echo "Inhalt wurde in '$OUTFILE' gespeichert."
-        cat "$OUTFILE"
+        # Andernfalls, das `show`-Skript für die PDF-Datei aufrufen
+        echo "⚙️ Verarbeite: $PDF_FILE"
+        "$SHOW_SCRIPT" "$PDF_FILE" > "$INVISIBLE_TXT_FILE"
+        echo "📄 Unsichtbare Ausgabedatei erstellt: $INVISIBLE_TXT_FILE"
     fi
-else
-    echo "Fehler: Datei ist keine PDF."
-    exit 1
-fi
+done
+
+echo "✅ Verarbeitung abgeschlossen."
