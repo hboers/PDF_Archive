@@ -148,11 +148,15 @@ if ($pdfSearch !== '') {
             <input type="text" id="searchFiles" class="form-control" placeholder="Dateiname suchen ...">
         </div>
         <div class="col">
-            <form method="get" class="input-group">
+            <form method="get" class="input-group" id="pdfSearchForm">
                 <input type="hidden" name="year" value="<?= htmlspecialchars($selectedYear ?? '') ?>">
                 <input type="search" id="pdfSearch" name="pdf_search" class="form-control"
                        value="<?= htmlspecialchars($pdfSearch) ?>" placeholder="PDF-Inhalt durchsuchen ...">
-                <button type="submit" class="btn btn-primary">Suchen</button>
+                <button type="submit" class="btn btn-primary" id="pdfSearchButton">
+                    <span class="spinner-border spinner-border-sm d-none" id="pdfSearchSpinner"
+                          aria-hidden="true"></span>
+                    <span id="pdfSearchButtonText">Suchen</span>
+                </button>
                 <?php if ($pdfSearch !== ''): ?>
                     <a class="btn btn-outline-secondary" href="?year=<?= urlencode($selectedYear ?? '') ?>"
                        title="Volltextsuche zurücksetzen">×</a>
@@ -214,6 +218,14 @@ if ($pdfSearch !== '') {
         const searchFiles = this.value;
         sessionStorage.setItem('searchFiles', searchFiles);
         filterItems(searchFiles)
+    });
+
+    document.getElementById('pdfSearchForm').addEventListener('submit', function () {
+        const button = document.getElementById('pdfSearchButton');
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+        document.getElementById('pdfSearchSpinner').classList.remove('d-none');
+        document.getElementById('pdfSearchButtonText').textContent = 'Suche läuft ...';
     });
 
     document.querySelectorAll('#fileList a').forEach(link => {
