@@ -80,19 +80,31 @@ if ($pdfSearch !== '') {
             background-color: #fff;
         }
 
-        a {
-            color: #007bff;
+        #fileList .file-list-item {
+            padding: 0;
+        }
+
+        #fileList .file-list-item a {
+            color: inherit;
             text-decoration: none;
             background-color: transparent;
+            padding: .5rem 1rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: background-color .15s ease-in-out;
         }
 
-        a:hover {
-            color: #0056b3;
-            text-decoration: underline;
+        #fileList .file-list-item a:hover {
+            color: inherit;
+            background-color: #e9ecef;
+            text-decoration: none;
         }
 
-        .list-group-item.active a {
+        #fileList .file-list-item.active a,
+        #fileList .file-list-item.active a:hover {
             color: #fff;
+            background-color: var(--bs-list-group-active-bg);
         }
 
         pre.output {
@@ -145,8 +157,12 @@ if ($pdfSearch !== '') {
             <div class="scrollable-list p-0">
                 <div class="list-group list-group-flush" id="fileList">
                     <?php foreach ($files as $file): ?>
-                        <div class="list-group-item" data-filename="<?= htmlspecialchars(basename($file)) ?>">
-                            <a class="d-block" href="<?= urlencode($file) ?>" target="pdfViewer">
+                        <div class="list-group-item file-list-item"
+                             data-filename="<?= htmlspecialchars(basename($file)) ?>">
+                            <a class="d-block"
+                               href="<?= implode('/', array_map('rawurlencode', explode('/', substr($file, 2)))) ?>"
+                               title="<?= htmlspecialchars(basename($file)) ?>"
+                               target="pdfViewer">
                                 <?= htmlspecialchars(basename($file)) ?>
                             </a>
                         </div>
