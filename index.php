@@ -47,7 +47,7 @@ if ($pdfSearch !== '') {
     $files = array_values(array_filter($files, function ($file) use ($baseDir, $pdfSearch) {
         $absolutePath = $baseDir . DIRECTORY_SEPARATOR . ltrim($file, './');
         $command = 'pdftotext ' . escapeshellarg($absolutePath)
-            . ' - 2>/dev/null | grep -Fqi -- ' . escapeshellarg($pdfSearch);
+            . ' - 2>/dev/null | grep -Fq -- ' . escapeshellarg($pdfSearch);
         $output = [];
         $exitCode = 1;
         exec($command, $output, $exitCode);
@@ -74,10 +74,19 @@ if ($pdfSearch !== '') {
 
         .pdf-viewer {
             width: 100%;
-            height: calc(100vh - 85px);
+            flex: 1 1 auto;
+            min-height: 0;
             border: 1px solid #dee2e6;
             border-radius: .375rem;
             background-color: #fff;
+        }
+
+        .pdf-viewer-column {
+            height: calc(100vh - 85px);
+        }
+
+        .pdf-viewer-filename {
+            overflow-wrap: anywhere;
         }
 
         #fileList .file-list-item {
@@ -158,7 +167,8 @@ if ($pdfSearch !== '') {
                 <div class="list-group list-group-flush" id="fileList">
                     <?php foreach ($files as $file): ?>
                         <div class="list-group-item file-list-item"
-                             data-filename="<?= htmlspecialchars(basename($file)) ?>">
+                             data-filename="<?= htmlspecialchars(basename($file)) ?>"
+                             data-filepath="<?= htmlspecialchars(substr($file, 2)) ?>">
                             <a class="d-block"
                                href="<?= implode('/', array_map('rawurlencode', explode('/', substr($file, 2)))) ?>"
                                title="<?= htmlspecialchars(basename($file)) ?>"
@@ -173,7 +183,9 @@ if ($pdfSearch !== '') {
                 </div>
             </div>
         </div>
-        <div class="col-8">
+        <div class="col-8 d-flex flex-column pdf-viewer-column">
+            <div class="pdf-viewer-filename bg-white border rounded px-2 py-1 mb-2"
+                 id="pdfViewerFilename">Kein PDF ausgewählt</div>
             <iframe class="pdf-viewer" id="pdfViewer" name="pdfViewer" title="PDF-Vorschau"></iframe>
         </div>
     </div>
@@ -182,11 +194,10 @@ if ($pdfSearch !== '') {
 <script>
 
     function filterItems(searchFiles) {
-        const searchLower = searchFiles.toLowerCase();
         const items = document.querySelectorAll('#fileList div.list-group-item[data-filename]');
         items.forEach(item => {
-            const filename = item.dataset.filename.toLowerCase();
-            item.style.display = filename.includes(searchLower) ? '' : 'none'
+            const filename = item.dataset.filename;
+            item.style.display = filename.includes(searchFiles) ? '' : 'none'
         });
     }
 
@@ -211,6 +222,8 @@ if ($pdfSearch !== '') {
                 item.classList.remove('active');
             });
             this.closest('.list-group-item').classList.add('active');
+            document.getElementById('pdfViewerFilename').textContent =
+                this.closest('.list-group-item').dataset.filepath;
         });
     });
 
