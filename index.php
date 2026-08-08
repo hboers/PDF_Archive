@@ -40,20 +40,34 @@ sort($files, SORT_NATURAL | SORT_FLAG_CASE);
 $pdfSearch = isset($_GET['pdf_search']) && is_string($_GET['pdf_search'])
     ? trim($_GET['pdf_search'])
     : '';
+$pdfSearchError = null;
 
 if ($pdfSearch !== '') {
     set_time_limit(0);
+    $command = 'python3 ' . escapeshellarg($baseDir . DIRECTORY_SEPARATOR . 'search_cache.py')
+        . ' --database ' . escapeshellarg($baseDir . DIRECTORY_SEPARATOR . 'search.sqlite')
+        . ' --root ' . escapeshellarg($baseDir)
+        . ' --year ' . escapeshellarg($selectedYear)
+        . ' --query ' . escapeshellarg($pdfSearch)
+        . ' 2>&1';
+    $output = [];
+    $exitCode = 1;
+    exec($command, $output, $exitCode);
+    $matchedPaths = $exitCode === 0 ? json_decode(implode("\n", $output), true) : null;
 
-    $files = array_values(array_filter($files, function ($file) use ($baseDir, $pdfSearch) {
-        $absolutePath = $baseDir . DIRECTORY_SEPARATOR . ltrim($file, './');
-        $command = 'pdftotext ' . escapeshellarg($absolutePath)
-            . ' - 2>/dev/null | grep -Fq -- ' . escapeshellarg($pdfSearch);
-        $output = [];
-        $exitCode = 1;
-        exec($command, $output, $exitCode);
-
-        return $exitCode === 0;
-    }));
+    if (is_array($matchedPaths)) {
+        $matchedFiles = array_fill_keys(
+            array_map(static fn($path) => './' . $path, $matchedPaths),
+            true
+        );
+        $files = array_values(array_filter(
+            $files,
+            static fn($file) => isset($matchedFiles[$file])
+        ));
+    } else {
+        $files = [];
+        $pdfSearchError = 'PDF-Volltextsuche konnte nicht ausgeführt werden.';
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -66,6 +80,17 @@ if ($pdfSearch !== '') {
         .scrollable-list {
             height: calc(100vh - 85px);
             overflow-y: auto;
+            background-color: #f1f3f5;
+            border: 1px solid #ced4da;
+            border-radius: .5rem;
+            box-shadow: 0 .125rem .375rem rgba(0, 0, 0, .08);
+        }
+
+        .form-control,
+        .form-select,
+        .form-control:focus,
+        .form-select:focus {
+            background-color: #fff8cc;
         }
 
         .year-select {
@@ -89,6 +114,10 @@ if ($pdfSearch !== '') {
             overflow-wrap: anywhere;
         }
 
+        #fileList .list-group-item {
+            background-color: #f1f3f5;
+        }
+
         #fileList .file-list-item {
             padding: 0;
         }
@@ -106,7 +135,7 @@ if ($pdfSearch !== '') {
 
         #fileList .file-list-item a:hover {
             color: inherit;
-            background-color: #e9ecef;
+            background-color: #dee2e6;
             text-decoration: none;
         }
 
@@ -130,11 +159,7 @@ if ($pdfSearch !== '') {
     <div class="row g-2 mb-2">
         <div class="col-auto">
             <form method="get">
-                <?php if ($pdfSearch !== ''): ?>
-                    <input type="hidden" name="pdf_search" value="<?= htmlspecialchars($pdfSearch) ?>">
-                <?php endif; ?>
-                <select id="year" name="year" class="form-select year-select" aria-label="Jahr"
-                        onchange="this.form.submit()">
+                <select id="year" name="year" class="form-select year-select" aria-label="Jahr">
                     <?php foreach ($years as $year): ?>
                         <option value="<?= htmlspecialchars($year) ?>"
                             <?= $year === $selectedYear ? 'selected' : '' ?>>
@@ -174,14 +199,16 @@ if ($pdfSearch !== '') {
                              data-filename="<?= htmlspecialchars(basename($file)) ?>"
                              data-filepath="<?= htmlspecialchars(substr($file, 2)) ?>">
                             <a class="d-block"
-                               href="<?= implode('/', array_map('rawurlencode', explode('/', substr($file, 2)))) ?>"
+                               href="<?= implode('/', array_map('rawurlencode', explode('/', substr($file, 2)))) ?>#pagemode=none&amp;zoom=page-width"
                                title="<?= htmlspecialchars(basename($file)) ?>"
                                target="pdfViewer">
                                 <?= htmlspecialchars(basename($file)) ?>
                             </a>
                         </div>
                     <?php endforeach; ?>
-                    <?php if ($files === []): ?>
+                    <?php if ($pdfSearchError !== null): ?>
+                        <div class="list-group-item text-danger"><?= htmlspecialchars($pdfSearchError) ?></div>
+                    <?php elseif ($files === []): ?>
                         <div class="list-group-item text-muted">Keine PDF-Dateien gefunden.</div>
                     <?php endif; ?>
                 </div>
@@ -226,6 +253,24 @@ if ($pdfSearch !== '') {
         button.setAttribute('aria-busy', 'true');
         document.getElementById('pdfSearchSpinner').classList.remove('d-none');
         document.getElementById('pdfSearchButtonText').textContent = 'Suche läuft ...';
+    });
+
+    document.getElementById('year').addEventListener('change', function () {
+        document.getElementById('pdfSearch').value = '';
+
+        const loadingItem = document.createElement('div');
+        loadingItem.className = 'list-group-item d-flex align-items-center gap-2 text-muted';
+
+        const spinner = document.createElement('span');
+        spinner.className = 'spinner-border spinner-border-sm';
+        spinner.setAttribute('aria-hidden', 'true');
+
+        const loadingText = document.createElement('span');
+        loadingText.textContent = `Geschäftsjahr ${this.value} wird geladen ...`;
+
+        loadingItem.append(spinner, loadingText);
+        document.getElementById('fileList').replaceChildren(loadingItem);
+        this.form.submit();
     });
 
     document.querySelectorAll('#fileList a').forEach(link => {
