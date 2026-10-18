@@ -65,6 +65,12 @@ Alternativ startet das vorhandene Skript den Server und öffnet die Seite automa
 
 Das Skript beendet den PHP-Server wieder, sobald es mit `Ctrl+C` gestoppt wird.
 
+### Desktop-Starter und LibreWolf-Profil
+
+`PDF_Archive.desktop` ist ein Linux-Desktop-Starter. Er führt `./serv.sh` im Verzeichnis `PDF_Archive` aus und öffnet so das Archiv über den lokalen Server in LibreWolf. Du kannst den Starter zum Beispiel im Anwendungsmenü oder auf dem Desktop ablegen.
+
+Das Verzeichnis `librewolf-profile/` enthält die Einstellungen für das separate, temporäre LibreWolf-Profil, das `serv.sh` bei jedem Start erstellt und beim Beenden wieder entfernt. `user.js` stellt die Sprache auf Deutsch, unterdrückt Erststart- und Standardbrowser-Abfragen und aktiviert benutzerdefinierte Stylesheets. `chrome/userChrome.css` blendet Browserleisten, Seitenleiste, Statusanzeige und Suchleiste aus, damit das Archiv wie ein schlichtes Anwendungsfenster wirkt. Das normale LibreWolf-Profil bleibt davon unberührt.
+
 ## Bedienung
 
 1. Das gewünschte Jahr auswählen.

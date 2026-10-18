@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=PDF Archive
+Comment=Starte PDF Archive im Browser
+Path=~/Sync/SynologyDrive/PDF_Archive
+Exec=./serv.sh
+Terminal=false
+Icon=folder-documents
+Categories=Utility;
