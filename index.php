@@ -1,4 +1,6 @@
 <?php
+// SPDX-License-Identifier: MIT
+
 $baseDir = realpath(__DIR__);
 $years = [];
 
